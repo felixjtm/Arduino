@@ -61,7 +61,7 @@ void loop()
         boardState[0][selectedLED]++;
         button1State = HIGH;
         Serial.write(selectedLED);
-        //mineTurn = false;
+        mineTurn = false;
       }
     }
     if(button2State == LOW)
@@ -75,28 +75,18 @@ void loop()
     if(Serial.available()>0)
     {
       selectedLED = Serial.read();
-      boardState[1][selctedLED]++;
+      if(selectedLED==8)
+        {
+          digitalWrite(pinLED,HIGH);
+        }
+        else
+        {
+          changeLED(selectedLED,ON);
+        }
+      boardState[1][selectedLED]++;
       mineTurn = true;
     }
   }
-
-
-
-  /*
-  if(i==8)
-  {
-    on=!on;
-    i=0;
-  }
-  if(!on)
-  {
-    changeLED(i,ON);
-  }else
-  {
-    changeLED(i,OFF);
-  }
-    delay(300);
-    i++;*/
 }
 
 
