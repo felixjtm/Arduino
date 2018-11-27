@@ -2,12 +2,22 @@ int data = 3;
 int clock = 5;
 int latch = 4;
 
+int pinLED = 8;
+
+int selectButtonPin = 9;
+int changeButtonPin = 10;
+int button1State = 0;// variable for reading the pushbutton status
+int button2State = 0;
+
 //Used for single LED manipulation
 volatile int ledState = 0;
 const int ON = HIGH;
 const int OFF = LOW;
 bool on = false;
-int i = 0;
+
+int selectedLED = 0;
+bool mineTurn = true;
+int boardState[2][9];
 
 void setup()
 {
@@ -15,16 +25,64 @@ void setup()
   pinMode(data, OUTPUT);
   pinMode(clock, OUTPUT);  
   pinMode(latch, OUTPUT);  
+  pinMode(pinLED,OUTPUT);
+  pinMode(selectButtonPin,INPUT);
+  pinMode(changeButtonPin,INPUT);
+  for(int i = 0;i<7;i++)
+  {
+    changeLED(i,OFF);
+  }
+  digitalWrite(pinLED,LOW);
 }
 
 
 
-/*
- * loop() - this function will start after setup finishes and then repeat
- * we set which LEDs we want on then call a routine which sends the states to the 74HC595
- */
-void loop()                     // run over and over again
+void loop()
 {
+  if(mineTurn)
+  {
+    button1State = digitalRead(selectButtonPin);
+    button2State = digitalRead(changeButtonPin);
+    if(button1State == LOW)
+    {
+      if(boardState[0][selectedLED] == 1||boardState[1][selectedLED] == 1)
+      {        
+      }
+      else
+      {
+        if(selectedLED==8)
+        {
+          digitalWrite(pinLED,HIGH);
+        }
+        else
+        {
+          changeLED(selectedLED,ON);
+        }
+        boardState[0][selectedLED]++;
+        button1State = HIGH;
+        Serial.write(selectedLED);
+        //mineTurn = false;
+      }
+    }
+    if(button2State == LOW)
+    {
+      selectedLED  = (selectedLED+1) % 9;
+      button2State = HIGH;
+    }
+  }
+  else
+  {
+    if(Serial.available()>0)
+    {
+      selectedLED = Serial.read();
+      boardState[1][selctedLED]++;
+      mineTurn = true;
+    }
+  }
+
+
+
+  /*
   if(i==8)
   {
     on=!on;
@@ -38,7 +96,7 @@ void loop()                     // run over and over again
     changeLED(i,OFF);
   }
     delay(300);
-    i++;
+    i++;*/
 }
 
 
