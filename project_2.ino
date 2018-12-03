@@ -89,7 +89,51 @@ void loop()
   }
 }
 
-
+bool CheckWin()
+{
+  if(boardState[0][0]==1)
+  {
+    if(boardState[0][1]==1||boardState[0][2]==1)
+    {
+      return true;
+    }
+    if(boardState[0][3]==1||boardState[0][6]==1)
+    {
+      return true;
+    }
+    if(boardState[0][4]==1||boardState[0][8]==1)
+    {
+      return true;
+    }
+  }
+  else if(boardState[0][5]==1)
+  {
+    if(boardState[0][2]==1||boardState[0][8]==1)
+    {
+      return true;
+    }
+    if(boardState[0][3]==1||boardState[0][4]==1)
+    {
+      return true;
+    }
+  }
+  else if(boardState[0][7]==1)
+  {
+    if(boardState[0][6]==1||boardState[0][8]==1)
+    {
+      return true;
+    }
+    if(boardState[0][4]==1||boardState[0][1]==1)
+    {
+      return true;
+    }
+  }
+  else if(boardState[0][2]==1||boardState[0][4]==1||boardState[0][6]==1)
+  {
+    return true;
+  }
+  return false;
+}
 
 /*
  * updateLEDs() - sends the LED states set in ledStates to the 74HC595
