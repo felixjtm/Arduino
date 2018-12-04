@@ -1,3 +1,5 @@
+bool player1 = 1;
+
 int data = 3; 
 int clock = 5;
 int latch = 4;
@@ -16,8 +18,17 @@ const int OFF = LOW;
 bool on = false;
 
 int selectedLED = 0;
-bool mineTurn = true;
-int boardState[2][9];
+bool myTurn = true;
+bool toggleOn = true; //Stores whether the LEDs should be toggled on or off
+bool toggleSelected = true;
+int boardState[2][9]; //1 being player one, 0 being player two
+
+unsigned long lastPulseTime = 0;
+unsigned long lastChoiceTime = 0;
+unsigned long lastSelectTime = 0;
+unsigned long lastSelectedPulseTime = 0;
+
+bool gameRunning = true;
 
 void setup()
 {
@@ -33,60 +44,79 @@ void setup()
     changeLED(i,OFF);
   }
   digitalWrite(pinLED,LOW);
+
+  if (!player1) {
+    myTurn = false;
+  }
+  
 }
 
 
 
 void loop()
 {
-  if(mineTurn)
-  {
-    button1State = digitalRead(selectButtonPin);
-    button2State = digitalRead(changeButtonPin);
-    if(button1State == LOW)
+  if (gameRunning) {
+    if(myTurn)
     {
-      if(boardState[0][selectedLED] == 1||boardState[1][selectedLED] == 1)
-      {        
-      }
-      else
+      unsigned long currentTime = millis();  
+      button1State = digitalRead(selectButtonPin);
+      button2State = digitalRead(changeButtonPin);
+      if(button1State == LOW)
       {
-        if(selectedLED==8)
-        {
-          digitalWrite(pinLED,HIGH);
+        if (currentTime - lastChoiceTime > 200) {
+          if(boardState[0][selectedLED] == 1 || boardState[1][selectedLED] == 1)
+          {        
+          }
+          else
+          {
+            boardState[!player1][selectedLED]++;
+            button1State = HIGH;
+            Serial.write(selectedLED);
+            //myTurn = false;
+          }
+          lastChoiceTime = currentTime;
         }
-        else
-        {
-          changeLED(selectedLED,ON);
+      }
+      if(button2State == LOW)
+      {
+        if (currentTime - lastChoiceTime > 200) {
+          if (selectedLED == 8) {
+              digitalWrite(selectedLED, LOW);
+          } else {
+              changeLED(selectedLED, OFF);
+          }
+          selectedLED  = (selectedLED+1) % 9;
+          button2State = HIGH;
+          lastChoiceTime = currentTime;
         }
-        boardState[0][selectedLED]++;
-        button1State = HIGH;
-        Serial.write(selectedLED);
-        mineTurn = false;
+     
       }
     }
-    if(button2State == LOW)
+    else
     {
-      selectedLED  = (selectedLED+1) % 9;
-      button2State = HIGH;
+      if(Serial.available()>0)
+      {
+        selectedLED = Serial.read();
+        if(selectedLED==8)
+          {
+            digitalWrite(pinLED,HIGH);
+          }
+          else
+          {
+            changeLED(selectedLED,ON);
+          }
+        boardState[!player1][selectedLED]++;
+        myTurn = true;
+      }
+    }
+  
+    flashLEDs(selectedLED);
+    if (CheckWin()) {
+      gameRunning = false;
     }
   }
-  else
-  {
-    if(Serial.available()>0)
-    {
-      selectedLED = Serial.read();
-      if(selectedLED==8)
-        {
-          digitalWrite(pinLED,HIGH);
-        }
-        else
-        {
-          changeLED(selectedLED,ON);
-        }
-      boardState[1][selectedLED]++;
-      mineTurn = true;
-    }
-  }
+  
+  
 }
 
 bool CheckWin()
@@ -133,6 +163,65 @@ bool CheckWin()
     return true;
   }
   return false;
+}
+
+void flashLEDs(int selectedLED) {
+
+  unsigned long currentTime = millis();  
+  
+  if (currentTime - lastPulseTime > 500) {
+    lastPulseTime = currentTime;
+    for (int i = 0; i < 10; i++) {
+      if (boardState[0][i] > 0) {
+        if (i == 8) {
+          if (toggleOn) {
+            digitalWrite(i, HIGH);
+          } else {
+            digitalWrite(i, LOW);
+          }
+        } else {
+          if (toggleOn) {
+            changeLED(i, ON);
+          } else {
+            changeLED(i, OFF);
+          }
+        }
+      }
+    }
+    toggleOn = !toggleOn;
+  }
+
+  if (currentTime - lastSelectedPulseTime > 70) {
+    for (int i = 0; i < 10; i++) {
+      if (boardState[1][i] > 0) {
+        if (i == 8) {
+          digitalWrite(i, HIGH);
+        } else {        
+          changeLED(i, ON);
+        }
+      }
+    }
+  }
+
+  if (currentTime - lastSelectedPulseTime > 70) {
+    lastSelectedPulseTime = currentTime;
+    if (selectedLED == 8) {
+      if (toggleSelected) {
+        digitalWrite(selectedLED, HIGH);
+      } else {
+        digitalWrite(selectedLED, LOW);
+      }
+    } else {
+      if (toggleSelected) {
+        changeLED(selectedLED, ON);
+      } else {
+        changeLED(selectedLED, OFF);
+      }
+    }
+    toggleSelected = !toggleSelected;
+  }
+
+  
 }
 
 /*
