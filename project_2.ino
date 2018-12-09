@@ -6,7 +6,7 @@ int clock = 5;
 int latch = 4;
 
 int pinLED = 8;
-int peizoPin = 11;
+int piezoPin = 11;
 
 int selectButtonPin = 9;
 int changeButtonPin = 10;
@@ -41,6 +41,7 @@ void setup()
   pinMode(pinLED,OUTPUT);
   pinMode(selectButtonPin,INPUT);
   pinMode(changeButtonPin,INPUT);
+  pinMode(piezoPin, OUTPUT);
   for(int i = 0;i<7;i++)
   {
     changeLED(i,OFF);
@@ -67,14 +68,13 @@ void loop()
       {
         if (currentTime - lastChoiceTime > 200) {
           if(boardState[0][selectedLED] == 1 || boardState[1][selectedLED] == 1)
-          {       
+          {        
             tone(11,500,100); 
           }
           else
           {
             tone(11,1000,100); 
-            turnCount++;
-            boardState[!player1][selectedLED]++;
+            boardState[player1][selectedLED]++;
             button1State = HIGH;
             Serial.write(selectedLED);
             myTurn = false;
@@ -89,6 +89,7 @@ void loop()
                 resetGame();
               }
             }
+
           }
           lastChoiceTime = currentTime;
         }
@@ -107,16 +108,18 @@ void loop()
         }
      
       }
+      pulseSelected(selectedLED);
     }
     else
     {
       if(Serial.available()>0)
       {
-        turnCount++;
         selectedLED = Serial.read();
         if(selectedLED==8)
           {
             digitalWrite(pinLED,HIGH);
+          } else if(selectedLED == 10) {
+            gameRunning == false;
           }
           else
           {
@@ -124,8 +127,8 @@ void loop()
           }
         boardState[!player1][selectedLED]++;
         myTurn = true;
-        if (CheckWin(player1)) {
-              gameRunning = false;
+        if (CheckWin(!player1)) {
+          gameRunning = false;
         }
         else if(turnCount==9)
         {
@@ -133,10 +136,10 @@ void loop()
         }
       }
     }
-  
-    flashLEDs(selectedLED);
-   
   }
+
+  flashLEDs(selectedLED);
+  
 }
 
 void playWinningTone()
@@ -154,48 +157,49 @@ void resetGame()
     boardState[0][i] = 0;
     boardState[1][i] = 0;
   }
+  turnCount = 0;
 }
 
 bool CheckWin(int player)
 {
   if(boardState[player][0]==1)
   {
-    if(boardState[player][1]==1||boardState[player][2]==1)
+    if(boardState[player][1]==1&&boardState[player][2]==1)
     {
       return true;
     }
-    if(boardState[player][3]==1||boardState[player][6]==1)
+    if(boardState[player][3]==1&&boardState[player][6]==1)
     {
       return true;
     }
-    if(boardState[player][4]==1||boardState[player][8]==1)
+    if(boardState[player][4]==1&&boardState[player][8]==1)
     {
       return true;
     }
   }
-  else if(boardState[player][5]==1)
+  if(boardState[player][5]==1)
   {
-    if(boardState[player][2]==1||boardState[player][8]==1)
+    if(boardState[player][2]==1&&boardState[player][8]==1)
     {
       return true;
     }
-    if(boardState[player][3]==1||boardState[player][4]==1)
+    if(boardState[player][3]==1&&boardState[player][4]==1)
     {
       return true;
     }
   }
-  else if(boardState[player][7]==1)
+  if(boardState[player][7]==1)
   {
-    if(boardState[player][6]==1||boardState[player][8]==1)
+    if(boardState[player][6]==1&&boardState[player][8]==1)
     {
       return true;
     }
-    if(boardState[player][4]==1||boardState[player][1]==1)
+    if(boardState[player][4]==1&&boardState[player][1]==1)
     {
       return true;
     }
   }
-  else if(boardState[player][2]==1||boardState[player][4]==1||boardState[player][6]==1)
+  if(boardState[player][2]==1&&boardState[player][4]==1&&boardState[player][6]==1)
   {
     return true;
   }
@@ -239,6 +243,11 @@ void flashLEDs(int selectedLED) {
       }
     }
   }
+  
+}
+
+void pulseSelected(int selectedLED) {
+  unsigned long currentTime = millis();
 
   if (currentTime - lastSelectedPulseTime > 70) {
     lastSelectedPulseTime = currentTime;
@@ -257,8 +266,7 @@ void flashLEDs(int selectedLED) {
     }
     toggleSelected = !toggleSelected;
   }
-
-  
+     
 }
 
 /*
@@ -288,4 +296,4 @@ int masks[] = {B11111110, B11111101, B11111011, B11110111, B11101111, B11011111,
     ledState = ledState & masks[led];
    }
    updateLEDs(ledState);              //send the new LED state to the shift register
-}
+ }
